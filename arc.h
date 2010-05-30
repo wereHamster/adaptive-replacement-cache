@@ -4,48 +4,39 @@
 
 #include <list.h>
 
-
-struct __arc_l {
+struct __arc_state {
   unsigned long size;
   struct __list head;
 };
 
-struct __arc_e {
-  struct __arc_l *list;
+struct __arc_object {
+  struct __arc_state *state;
   struct __list head;
 };
 
-struct object {
-  unsigned char sha1[20];
-  struct __arc_e entry;
-
-  void *data;
-};
-
-typedef int (*__arc_compare_t)(struct __arc_e *e, const void *key);
-typedef struct __arc_e *(*__arc_alloc_t)(const void *key);
-typedef int (*__arc_fetch_t)(struct __arc_e *e);
-typedef void (*__arc_evict_t)(struct __arc_e *e);
-
 struct __arc_ops {
-  __arc_compare_t cmp;
-  __arc_alloc_t alloc;
-  __arc_fetch_t fetch;
-  __arc_evict_t evict;
+  int (*cmp) (struct __arc_object *obj, const void *key);
+  
+  struct __arc_object *(*alloc) (const void *key);
+  int (*fetch) (struct __arc_object *obj);
+  void (*evict) (struct __arc_object *obj);
+  void (*destroy) (struct __arc_object *obj);
 };
 
-struct __arc_s {
+struct __arc {
   struct __arc_ops *ops;
 
   unsigned long c, p;
-  struct __arc_l mrug, mru, mfu, mfug;
+  struct __arc_state mrug, mru, mfu, mfug;
 };
 
-struct __arc_s *__arc_create(struct __arc_ops *ops, unsigned long c);
-void __arc_destroy(struct __arc_s *s);
+/* Functions to create and destroy the ARC */
+struct __arc *__arc_create(struct __arc_ops *ops, unsigned long c);
+void __arc_destroy(struct __arc *cache);
 
-struct __arc_e *__arc_lookup(struct __arc_s *s, const void *key);
-//void __arc_insert(struct __arc_s *s, struct __arc_e *e);
-//void __arc_access(struct __arc_s *s, struct __arc_e *e);
+/* Lookup an object in the cache. The ARC automatically creates and
+ * loads the object if it does not exists yet. */
+struct __arc_object *__arc_lookup(struct __arc *cache, const void *key);
+
 
 #endif /* __ARC_H__ */
