@@ -12,6 +12,7 @@ struct __arc_state {
 struct __arc_object {
     struct __arc_state *state;
     struct __list head;
+    unsigned long size;
 };
 
 struct __arc_ops {
@@ -22,7 +23,7 @@ struct __arc_ops {
     struct __arc_object *(*alloc) (const void *key);
     
     /* Fetch the data associated with the object. */
-    int (*fetch) (struct __arc_object *obj);
+    unsigned long (*fetch) (struct __arc_object *obj);
     
     /* This function is called when the cache is full and we need to evict
      * objects from the cache. Free all data associated with the object. */

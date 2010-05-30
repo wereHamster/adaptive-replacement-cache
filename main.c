@@ -40,13 +40,13 @@ static struct __arc_object *__ops_alloc(const void *key)
     return &obj->entry;
 }
 
-static int __ops_fetch(struct __arc_object *e)
+static unsigned long __ops_fetch(struct __arc_object *e)
 {
     struct object *obj = __list_entry(e, struct object, entry);
     obj->data = malloc(200);
 
     printf("fetch: %02x\n", objname(&obj->entry));
-    return 0;
+    return rand() % 100;
 }
 
 static void __ops_evict(struct __arc_object *e)
@@ -120,7 +120,7 @@ static void stats(struct __arc *s)
 
 int main(int argc, char *argv[])
 {
-    struct __arc *s = __arc_create(&ops, 5);
+    struct __arc *s = __arc_create(&ops, 300);
     time_t now = time(NULL); //1275232080
     printf("seed: %lu\n", now);
     srandom(now);
