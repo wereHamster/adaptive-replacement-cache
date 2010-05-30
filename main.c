@@ -30,7 +30,7 @@ static struct __arc_object *__ops_alloc(const void *key)
     struct object *obj = malloc(sizeof(struct object));
     memset(obj, 0, sizeof(struct object));
 
-    __list_init(&obj->entry.head);
+    __arc_object_init(&obj->entry, rand() % 100);
 
     memcpy(obj->sha1, key, 20);
     obj->data = NULL;
@@ -40,13 +40,13 @@ static struct __arc_object *__ops_alloc(const void *key)
     return &obj->entry;
 }
 
-static unsigned long __ops_fetch(struct __arc_object *e)
+static int __ops_fetch(struct __arc_object *e)
 {
     struct object *obj = __list_entry(e, struct object, entry);
     obj->data = malloc(200);
 
     printf("fetch: %02x\n", objname(&obj->entry));
-    return rand() % 100;
+    return 0;
 }
 
 static void __ops_evict(struct __arc_object *e)

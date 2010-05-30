@@ -23,6 +23,14 @@ static char *listname(struct __arc *s, struct __arc_state *l)
     return "unknown";
 }
 
+void __arc_object_init(struct __arc_object *obj, unsigned long size)
+{
+    __list_init(&obj->head);
+    obj->size = size;
+}
+
+static void __arc_balance(struct __arc *cache, unsigned long size);
+
 /* Move the object to the given state. If the state transition requires,
 * fetch, evict or destroy the object. */
 static int __arc_move(struct __arc *cache, struct __arc_object *obj, struct __arc_state *state)
@@ -46,8 +54,8 @@ static int __arc_move(struct __arc *cache, struct __arc_object *obj, struct __ar
         } else if (obj->state != &cache->mru && obj->state != &cache->mfu) {
             /* The object is being moved from one of the ghost lists into
              * the MRU or MFU list, fetch the object into the cache. */
-            unsigned long size = cache->ops->fetch(obj);
-            if (size == 0) {
+            __arc_balance(cache, obj->size);
+            if (cache->ops->fetch(obj)) {
                 /* If the fetch fails, put the object back to the list
                  * it was in before. */
                 obj->state->size += obj->size;
@@ -55,8 +63,6 @@ static int __arc_move(struct __arc *cache, struct __arc_object *obj, struct __ar
                 
                 return -1;
             }
-            
-            obj->size = size;
         }
 
         __list_prepend(&obj->head, &state->head);
@@ -75,18 +81,37 @@ static struct __arc_object *__arc_state_tail(struct __arc_state *state)
     return __list_entry(head, struct __arc_object, head);
 }
 
-/* Move objects from the MRU or MFU list to the respective ghost list
- * until the size of MRU+MFU is less than 'c'. */
-static void __arc_replace(struct __arc *cache, struct __arc_state *state)
+/* Balance the lists so that we can fit an object with the given size into
+ * the cache. */
+static void __arc_balance(struct __arc *cache, unsigned long size)
 {
-    printf("mru: %lu, mfu: %lu\n", cache->mru.size, cache->mfu.size);
-    while (cache->mru.size + cache->mfu.size > cache->c) {
-        if (cache->mru.size >= 1 && ((state == &cache->mfug && cache->mru.size == cache->p) || (cache->mru.size > cache->p))) {
+    /* First move objects from MRU/MFU to their respective ghost lists. */
+    while (cache->mru.size + cache->mfu.size + size > cache->c) {
+        printf("mru: %lu, mfu: %lu\n", cache->mru.size, cache->mfu.size);
+        
+        if (cache->mru.size > cache->p) {
             struct __arc_object *obj = __arc_state_tail(&cache->mru);
             __arc_move(cache, obj, &cache->mrug);
-        } else if (cache->mfu.size >= 1) {
+        } else if (cache->mfu.size > 0) {
             struct __arc_object *obj = __arc_state_tail(&cache->mfu);
             __arc_move(cache, obj, &cache->mfug);
+        } else {
+            break;
+        }
+    }
+    
+    /* Then start removing objects from the ghost lists. */
+    while (cache->mrug.size + cache->mfug.size > cache->c) {
+        printf("mrug: %lu, mfug: %lu\n", cache->mrug.size, cache->mfug.size);
+        
+        if (cache->mfug.size > cache->p) {
+            struct __arc_object *obj = __arc_state_tail(&cache->mfug);
+            __arc_move(cache, obj, NULL);
+        } else if (cache->mrug.size > 0) {
+            struct __arc_object *obj = __arc_state_tail(&cache->mrug);
+            __arc_move(cache, obj, NULL);
+        } else {
+            break;
         }
     }
 }
@@ -182,17 +207,17 @@ struct __arc_object *__arc_lookup(struct __arc *cache, const void *key)
 
     if (obj) {
         if (obj->state == &cache->mru || obj->state == &cache->mfu) {
-            /* Object is already in the cache, move it to the head of the MFU list */
+            /* Object is already in the cache, move it to the head of the
+             * MFU list. This operation can not fail since the data is
+             * already in the cache. */
             __arc_move(cache, obj, &cache->mfu);
         } else if (obj->state == &cache->mrug) {
             cache->p = MIN(cache->c, cache->p + MAX(cache->mfug.size / cache->mrug.size, 1));
-            __arc_replace(cache, obj->state);
             if (__arc_move(cache, obj, &cache->mfu)) {
                 return NULL;
             }
         } else if (obj->state == &cache->mfug) {
             cache->p = MIN(cache->c, MAX(0, cache->p - MAX(cache->mrug.size / cache->mfug.size, 1)));
-            __arc_replace(cache, obj->state);
             if (__arc_move(cache, obj, &cache->mfu)) {
                 return NULL;
             }
@@ -208,7 +233,6 @@ struct __arc_object *__arc_lookup(struct __arc *cache, const void *key)
             if (cache->mru.size < cache->c) {
                 struct __arc_object *e = __arc_state_tail(&cache->mrug);
                 __arc_move(cache, e, NULL);
-                __arc_replace(cache, NULL);
             } else {                
                 struct __arc_object *e = __arc_state_tail(&cache->mru);
                 __arc_move(cache, e, NULL);
@@ -218,7 +242,6 @@ struct __arc_object *__arc_lookup(struct __arc *cache, const void *key)
                 struct __arc_object *e = __arc_state_tail(&cache->mfug);
                 __arc_move(cache, e, NULL);
             }
-            __arc_replace(cache, NULL);
         }
 
         __arc_move(cache, obj, &cache->mru);
