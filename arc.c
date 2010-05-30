@@ -29,7 +29,7 @@ static struct __arc_object *__arc_hash_lookup(struct __arc *cache, const void *k
     unsigned long hash = cache->ops->hash(key) % cache->hash.size;
     
     __arc_list_each(iter, &cache->hash.bucket[hash]) {
-        struct __arc_object *obj = __arc_list_entry(iter, struct __arc_object, head);
+        struct __arc_object *obj = __arc_list_entry(iter, struct __arc_object, hash);
         if (cache->ops->cmp(obj, key) == 0)
             return obj;
     }
