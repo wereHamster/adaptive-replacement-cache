@@ -122,10 +122,10 @@ struct __arc {
 struct __arc *__arc_create(struct __arc_ops *ops, unsigned long c);
 void __arc_destroy(struct __arc *cache);
 
-/* Initialize a new object. */
+/* Initialize a new object. To be used from the alloc() op function. */
 void __arc_object_init(struct __arc_object *obj, unsigned long size);
 
-/* Lookup an object in the cache. The cache automatically creates and
+/* Lookup an object in the cache. The cache automatically allocates and
  * fetches the object if it does not exists yet. */
 struct __arc_object *__arc_lookup(struct __arc *cache, const void *key);
 

@@ -8,12 +8,12 @@
 #define MIN(a, b) ( (a) < (b) ? (a) : (b) )
 
 /* A simple hashtable with fixed bucket size. */
-static void __arc_hash_init(struct __arc_hash *hash)
+static void __arc_hash_init(struct __arc *cache)
 {
-    hash->size = 3079;
-    hash->bucket = malloc(hash->size * sizeof(struct __arc_list));
-    for (int i = 0; i < hash->size; ++i) {
-        __arc_list_init(&hash->bucket[i]);
+    cache->hash.size = 3079;
+    cache->hash.bucket = malloc(cache->hash.size * sizeof(struct __arc_list));
+    for (int i = 0; i < cache->hash.size; ++i) {
+        __arc_list_init(&cache->hash.bucket[i]);
     }
 }
 
@@ -37,9 +37,9 @@ static struct __arc_object *__arc_hash_lookup(struct __arc *cache, const void *k
     return NULL;
 }
 
-static void __arc_hash_fini(struct __arc_hash *hash)
+static void __arc_hash_fini(struct __arc *cache)
 {
-    free(hash->bucket);
+    free(cache->hash.bucket);
 }
 
 /* Initialize a new object with this function. */
@@ -142,7 +142,7 @@ struct __arc *__arc_create(struct __arc_ops *ops, unsigned long c)
 
     cache->ops = ops;
     
-    __arc_hash_init(&cache->hash);
+    __arc_hash_init(cache);
 
     cache->c = c;
     cache->p = c >> 1;
@@ -160,7 +160,7 @@ void __arc_destroy(struct __arc *cache)
 {
     struct __arc_list *iter;
     
-    __arc_hash_fini(&cache->hash);
+    __arc_hash_fini(cache);
     
     __arc_list_each(iter, &cache->mrug.head) {
         struct __arc_object *obj = __arc_list_entry(iter, struct __arc_object, head);
