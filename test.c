@@ -5,6 +5,8 @@
 #include <time.h>
 #include <assert.h>
 
+/* This is the object we're managing. It has a name (sha1)
+ * and some data. */
 struct object {
     unsigned char sha1[20];
     struct __arc_object entry;

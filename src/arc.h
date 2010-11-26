@@ -6,7 +6,7 @@
 #include <stddef.h>
 
 /**********************************************************************
- * Simple double-linked list, inspired by the implemntation used in the
+ * Simple double-linked list, inspired by the implementation used in the
  * linux kernel.
  */
 struct __arc_list {
@@ -48,14 +48,14 @@ __arc_list_splice(struct __arc_list *prev, struct __arc_list *next)
 static inline void
 __arc_list_remove(struct __arc_list *head)
 {
-    __arc_list_splice( head->prev, head->next);
+    __arc_list_splice(head->prev, head->next);
     head->next = head->prev = NULL;
 }
 
 static inline void
 __arc_list_prepend(struct __arc_list *head, struct __arc_list *list)
 {
-    __arc_list_insert(head, list, list->next );
+    __arc_list_insert(head, list, list->next);
 }
 
 
