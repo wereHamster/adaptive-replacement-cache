@@ -192,14 +192,13 @@ struct __arc_object *__arc_lookup(struct __arc *cache, const void *key)
     if (obj) {
         if (obj->state == &cache->mru || obj->state == &cache->mfu) {
             /* Object is already in the cache, move it to the head of the
-             * MFU list. This operation can not fail since the data is
-             * already in the cache. */
+             * MFU list. */
             return __arc_move(cache, obj, &cache->mfu);
         } else if (obj->state == &cache->mrug) {
             cache->p = MIN(cache->c, cache->p + MAX(cache->mfug.size / cache->mrug.size, 1));
 			return __arc_move(cache, obj, &cache->mfu);
         } else if (obj->state == &cache->mfug) {
-            cache->p = MIN(cache->c, MAX(0, cache->p - MAX(cache->mrug.size / cache->mfug.size, 1)));
+            cache->p = MAX(0, cache->p - MAX(cache->mrug.size / cache->mfug.size, 1));
 			return __arc_move(cache, obj, &cache->mfu);
         } else {
             assert(0);

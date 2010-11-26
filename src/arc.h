@@ -92,7 +92,7 @@ struct __arc_ops {
     /* Compare the object with the key. */
     int (*cmp) (struct __arc_object *obj, const void *key);
 
-    /* Allocate a new object. The size of the new object must be know at
+    /* Create a new object. The size of the new object must be know at
      * this time. Use the __arc_object_init() function to initialize
      * the __arc_object structure. */
     struct __arc_object *(*create) (const void *key);
