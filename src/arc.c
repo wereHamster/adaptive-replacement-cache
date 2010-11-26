@@ -10,45 +10,46 @@
 /* A simple hashtable with fixed bucket count. */
 static void __arc_hash_init(struct __arc *cache)
 {
-    cache->hash.size = 3079;
-    cache->hash.bucket = malloc(cache->hash.size * sizeof(struct __arc_list));
-    for (int i = 0; i < cache->hash.size; ++i) {
-        __arc_list_init(&cache->hash.bucket[i]);
-    }
+	cache->hash.size = 3079;
+	cache->hash.bucket = malloc(cache->hash.size * sizeof(struct __arc_list));
+	for (int i = 0; i < cache->hash.size; ++i) {
+		__arc_list_init(&cache->hash.bucket[i]);
+	}
 }
 
 static void __arc_hash_insert(struct __arc *cache, const void *key, struct __arc_object *obj)
 {
-    unsigned long hash = cache->ops->hash(key) % cache->hash.size;
-    __arc_list_prepend(&obj->hash, &cache->hash.bucket[hash]);
+	unsigned long hash = cache->ops->hash(key) % cache->hash.size;
+	__arc_list_prepend(&obj->hash, &cache->hash.bucket[hash]);
 }
 
 static struct __arc_object *__arc_hash_lookup(struct __arc *cache, const void *key)
 {
-    struct __arc_list *iter;
-    unsigned long hash = cache->ops->hash(key) % cache->hash.size;
-    
-    __arc_list_each(iter, &cache->hash.bucket[hash]) {
-        struct __arc_object *obj = __arc_list_entry(iter, struct __arc_object, hash);
-        if (cache->ops->cmp(obj, key) == 0)
-            return obj;
-    }
-    
-    return NULL;
+	struct __arc_list *iter;
+	unsigned long hash = cache->ops->hash(key) % cache->hash.size;
+
+	__arc_list_each(iter, &cache->hash.bucket[hash]) {
+		struct __arc_object *obj = __arc_list_entry(iter, struct __arc_object, hash);
+		if (cache->ops->cmp(obj, key) == 0)
+			return obj;
+	}
+
+	return NULL;
 }
 
 static void __arc_hash_fini(struct __arc *cache)
 {
-    free(cache->hash.bucket);
+	free(cache->hash.bucket);
 }
 
 /* Initialize a new object with this function. */
 void __arc_object_init(struct __arc_object *obj, unsigned long size)
 {
-    __arc_list_init(&obj->head);
-    __arc_list_init(&obj->hash);
-    
-    obj->size = size;
+	obj->state = NULL;
+	obj->size = size;
+
+	__arc_list_init(&obj->head);
+	__arc_list_init(&obj->hash);
 }
 
 /* Forward-declaration needed in __arc_move(). */
