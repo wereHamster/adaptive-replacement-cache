@@ -22,13 +22,13 @@ struct __arc_list {
 #define __arc_list_each_prev(pos, head) \
     for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
-static void
+static inline void
 __arc_list_init( struct __arc_list * head )
 {
     head->next = head->prev = head;
 }
 
-static void
+static inline void
 __arc_list_insert(struct __arc_list *list, struct __arc_list *prev, struct __arc_list *next)
 {
     next->prev = list;
@@ -37,7 +37,7 @@ __arc_list_insert(struct __arc_list *list, struct __arc_list *prev, struct __arc
     prev->next = list;
 }
 
-static void
+static inline void
 __arc_list_splice(struct __arc_list *prev, struct __arc_list *next)
 {
     next->prev = prev;
@@ -45,14 +45,14 @@ __arc_list_splice(struct __arc_list *prev, struct __arc_list *next)
 }
 
 
-static void
+static inline void
 __arc_list_remove(struct __arc_list *head)
 {
     __arc_list_splice( head->prev, head->next);
     head->next = head->prev = NULL;
 }
 
-static void
+static inline void
 __arc_list_prepend(struct __arc_list *head, struct __arc_list *list)
 {
     __arc_list_insert(head, list, list->next );
@@ -69,7 +69,7 @@ struct __arc_hash {
 
 
 /**********************************************************************
- * Here begins the 
+ * The arc state represents one of the T1, T2, B1, B2 lists
  */
 struct __arc_state {
     unsigned long size;
