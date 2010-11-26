@@ -31,7 +31,7 @@ static int __ops_compare(struct __arc_object *e, const void *key)
     return memcmp(obj->sha1, key, 20);
 }
 
-static struct __arc_object *__ops_alloc(const void *key)
+static struct __arc_object *__ops_create(const void *key)
 {
     struct object *obj = malloc(sizeof(struct object));
     memset(obj, 0, sizeof(struct object));
@@ -41,7 +41,7 @@ static struct __arc_object *__ops_alloc(const void *key)
     memcpy(obj->sha1, key, 20);
     obj->data = NULL;
 
-    printf("alloc: %02x\n", objname(&obj->entry));
+    printf("create: %02x\n", objname(&obj->entry));
 
     return &obj->entry;
 }
@@ -73,7 +73,7 @@ static void __ops_destroy(struct __arc_object *e)
 static struct __arc_ops ops = {
     .hash = __ops_hash,
     .cmp = __ops_compare,
-    .alloc = __ops_alloc,
+    .create = __ops_create,
     .fetch = __ops_fetch,
     .evict = __ops_evict,
     .destroy = __ops_destroy
@@ -83,14 +83,13 @@ static void stats(struct __arc *s)
 {
     struct __arc_list *pos;
 
-    printf("+");
     __arc_list_each_prev(pos, &s->mrug.head) {
         struct __arc_object *e = __arc_list_entry(pos, struct __arc_object, head);
         assert(e->state == &s->mrug);
         struct object *obj = __arc_list_entry(e, struct object, entry);
         printf("[%02x]", obj->sha1[0]);
     }
-    printf("+");
+    printf(" + ");
     int i = 0;
     __arc_list_each_prev(pos, &s->mru.head) {
         struct __arc_object *e = __arc_list_entry(pos, struct __arc_object, head);
@@ -99,9 +98,9 @@ static void stats(struct __arc *s)
         printf("[%02x]", obj->sha1[0]);
 
         if (i++ == s->p)
-            printf("#");
+            printf(" # ");
     }
-    printf("+");
+    printf(" + ");
     __arc_list_each(pos, &s->mfu.head) {
         struct __arc_object *e = __arc_list_entry(pos, struct __arc_object, head);
         assert(e->state == &s->mfu);
@@ -109,18 +108,18 @@ static void stats(struct __arc *s)
         printf("[%02x]", obj->sha1[0]);
 
         if (i++ == s->p)
-            printf("#");
+            printf(" # ");
     }
     if (i == s->p)
-        printf("#");
-    printf("+");
+        printf(" # ");
+    printf(" + ");
     __arc_list_each(pos, &s->mfug.head) {
         struct __arc_object *e = __arc_list_entry(pos, struct __arc_object, head);
         assert(e->state == &s->mfug);
         struct object *obj = __arc_list_entry(e, struct object, entry);
         printf("[%02x]", obj->sha1[0]);
     }
-    printf("+\n");
+    printf("\n");
 }
 
 #define MAXOBJ 16

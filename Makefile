@@ -1,3 +1,4 @@
 
+CPPFLAGS = -Isrc
 all:
-	gcc -Wall -I. -g -ggdb -O0 -std=c99 -o arc arc.c main.c
+	gcc -Wall $(CPPFLAGS) -g -std=c99 -o arc src/arc.c main.c

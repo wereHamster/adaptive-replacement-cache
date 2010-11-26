@@ -164,19 +164,19 @@ void __arc_destroy(struct __arc *cache)
     
     __arc_list_each(iter, &cache->mrug.head) {
         struct __arc_object *obj = __arc_list_entry(iter, struct __arc_object, head);
-        cache->ops->destroy(obj);
+		__arc_move(cache, obj, NULL);
     }
     __arc_list_each(iter, &cache->mru.head) {
         struct __arc_object *obj = __arc_list_entry(iter, struct __arc_object, head);
-        cache->ops->destroy(obj);
+		__arc_move(cache, obj, NULL);
     }
     __arc_list_each(iter, &cache->mfu.head) {
         struct __arc_object *obj = __arc_list_entry(iter, struct __arc_object, head);
-        cache->ops->destroy(obj);
+		__arc_move(cache, obj, NULL);
     }
     __arc_list_each(iter, &cache->mfug.head) {
         struct __arc_object *obj = __arc_list_entry(iter, struct __arc_object, head);
-        cache->ops->destroy(obj);
+		__arc_move(cache, obj, NULL);
     }
 
     free(cache);
@@ -207,7 +207,7 @@ struct __arc_object *__arc_lookup(struct __arc *cache, const void *key)
             assert(0);
         }
     } else {
-        obj = cache->ops->alloc(key);
+        obj = cache->ops->create(key);
         if (!obj)
             return NULL;
         
