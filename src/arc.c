@@ -7,7 +7,7 @@
 #define MAX(a, b) ( (a) > (b) ? (a) : (b) )
 #define MIN(a, b) ( (a) < (b) ? (a) : (b) )
 
-/* A simple hashtable with fixed bucket size. */
+/* A simple hashtable with fixed bucket count. */
 static void __arc_hash_init(struct __arc *cache)
 {
     cache->hash.size = 3079;
@@ -56,7 +56,7 @@ static void __arc_balance(struct __arc *cache, unsigned long size);
 
 /* Move the object to the given state. If the state transition requires,
 * fetch, evict or destroy the object. */
-static int __arc_move(struct __arc *cache, struct __arc_object *obj, struct __arc_state *state)
+static struct __arc_object *__arc_move(struct __arc *cache, struct __arc_object *obj, struct __arc_state *state)
 {
     if (obj->state) {
         obj->state->size -= obj->size;
@@ -67,6 +67,8 @@ static int __arc_move(struct __arc *cache, struct __arc_object *obj, struct __ar
         /* The object is being removed from the cache, destroy it. */
         __arc_list_remove(&obj->hash);
         cache->ops->destroy(obj);
+
+		return NULL;
     } else {
         if (state == &cache->mrug || state == &cache->mfug) {
             /* The object is being moved to one of the ghost lists, evict
@@ -82,7 +84,7 @@ static int __arc_move(struct __arc *cache, struct __arc_object *obj, struct __ar
                 obj->state->size += obj->size;
                 __arc_list_prepend(&obj->head, &obj->state->head);
                 
-                return -1;
+                return NULL;
             }
         }
 
@@ -92,7 +94,7 @@ static int __arc_move(struct __arc *cache, struct __arc_object *obj, struct __ar
         obj->state->size += obj->size;
     }
     
-    return 0;
+    return obj;
 }
 
 /* Return the LRU element from the given state. */
@@ -192,17 +194,13 @@ struct __arc_object *__arc_lookup(struct __arc *cache, const void *key)
             /* Object is already in the cache, move it to the head of the
              * MFU list. This operation can not fail since the data is
              * already in the cache. */
-            __arc_move(cache, obj, &cache->mfu);
+            return __arc_move(cache, obj, &cache->mfu);
         } else if (obj->state == &cache->mrug) {
             cache->p = MIN(cache->c, cache->p + MAX(cache->mfug.size / cache->mrug.size, 1));
-            if (__arc_move(cache, obj, &cache->mfu)) {
-                return NULL;
-            }
+			return __arc_move(cache, obj, &cache->mfu);
         } else if (obj->state == &cache->mfug) {
             cache->p = MIN(cache->c, MAX(0, cache->p - MAX(cache->mrug.size / cache->mfug.size, 1)));
-            if (__arc_move(cache, obj, &cache->mfu)) {
-                return NULL;
-            }
+			return __arc_move(cache, obj, &cache->mfu);
         } else {
             assert(0);
         }
@@ -210,11 +208,9 @@ struct __arc_object *__arc_lookup(struct __arc *cache, const void *key)
         obj = cache->ops->create(key);
         if (!obj)
             return NULL;
-        
-        __arc_hash_insert(cache, key, obj);
-        /* New objects are always moved to the MRU list. */
-        __arc_move(cache, obj, &cache->mru);
-    }
 
-    return obj;
+		/* New objects are always moved to the MRU list. */
+        __arc_hash_insert(cache, key, obj);
+        return __arc_move(cache, obj, &cache->mru);
+    }
 }

@@ -69,7 +69,7 @@ struct __arc_hash {
 
 
 /**********************************************************************
- * The arc state represents one of the T1, T2, B1, B2 lists
+ * The arc state represents one of the m{r,f}u{g,} lists
  */
 struct __arc_state {
     unsigned long size;
